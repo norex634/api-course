@@ -2,12 +2,20 @@
 
 namespace App\Entity;
 
-use App\Repository\CustomerRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiResource;
+use App\Repository\CustomerRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
+use ApiPlatform\Metadata\ApiFilter;
 
 #[ORM\Entity(repositoryClass: CustomerRepository::class)]
+#[ApiResource]
+#[ApiFilter(searchFilter::class, properties:[
+    "firstName" => 'partial',
+    "lastName" => 'partial',
+    "company" => 'partial'
+])]
 class Customer
 {
     #[ORM\Id]
