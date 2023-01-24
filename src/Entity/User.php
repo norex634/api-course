@@ -7,37 +7,62 @@ use App\Repository\UserRepository;
 use ApiPlatform\Metadata\ApiResource;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    normalizationContext: [
+        'groups' => ['users_read']
+    ]
+)]
+#[UniqueEntity(fields: ['email'], message: "L'email est déjà utilisé")]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['users_read','customers_read','invoices_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Groups(['users_read','customers_read','invoices_read'])]
+    #[Assert\NotBlank(message: "L'email est obligatoire")]
+    #[Assert\Email(message: "L'email n'est pas valide")]
+    //#[Assert\Regex(pattern: "/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/", message: "L'email ne peut contenir que des lettres")]
     private ?string $email = null;
 
     #[ORM\Column]
+    #[Groups(['users_read'])]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Assert\NotBlank(message: "Le mot de passe est obligatoire")]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['users_read','customers_read','invoices_read'])]
+    #[Assert\NotBlank(message: "Le prénom est obligatoire")]
+    #[Assert\Length(min: 2, minMessage: "Le prénom doit faire au moins 2 caractères", max: 255, maxMessage: "Le prénom ne peut pas faire plus de 255 caractères")]
+    #[Assert\Regex(pattern: "/^[a-zA-Z]+$/", message: "Le prénom ne peut contenir que des lettres")]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['users_read','customers_read','invoices_read'])]
+    #[Assert\NotBlank(message: "Le nom est obligatoire")]
+    #[Assert\Length(min: 2, minMessage: "Le nom doit faire au moins 2 caractères", max: 255, maxMessage: "Le nom ne peut pas faire plus de 255 caractères")]
+    #[Assert\Regex(pattern: "/^[a-zA-Z]+$/", message: "Le nom ne peut contenir que des lettres")]
     private ?string $lastName = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Customer::class, orphanRemoval: true)]
+    #[Groups(['users_read'])]
     private Collection $customers;
 
     public function __construct()

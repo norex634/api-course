@@ -2,53 +2,115 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\CustomerRepository;
+use ApiPlatform\Metadata\GetCollection;
 use Doctrine\Common\Collections\Collection;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use Doctrine\Common\Collections\ArrayCollection;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use Symfony\Component\Serializer\Annotation\Groups;
+
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CustomerRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    normalizationContext: [
+        'groups' => ['customers_read']
+    ],
+    operations: [
+        new Get(), 
+        new GetCollection(),
+        new Post(),
+        new Put(),
+        new Patch(),
+        new Delete()
+    ]
+)]
 #[ApiFilter(SearchFilter::class, properties:[
     "firstName" => 'partial',
-    "lastName" => 'partial',
-    "company" => 'partial'
+    "lastName",
+    "company"
 ])]
 #[ApiFilter(OrderFilter::class)]
-
 class Customer
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['customers_read','invoices_read','users_read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['customers_read','invoices_read','users_read'])]
+    #[Assert\Length(min: 2, minMessage: "Le prénom doit faire au moins 2 caractères", max: 255, maxMessage: "Le prénom ne peut pas faire plus de 255 caractères")]
+    #[Assert\NotBlank(message: "Le prénom est obligatoire")]
+    #[Assert\Regex(pattern: "/[a-zA-Z]/", message: "Le prénom ne peut contenir que des lettres")]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['customers_read','invoices_read','users_read'])]
+    #[Assert\Length(min: 2, minMessage: "Le nom doit faire au moins 2 caractères", max: 255, maxMessage: "Le nom ne peut pas faire plus de 255 caractères")]
+    #[Assert\NotBlank(message: "Le nom est obligatoire")]
+    #[Assert\Regex(pattern: "/[a-zA-Z]/", message: "Le nom ne peut contenir que des lettres")]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['customers_read','invoices_read','users_read'])]
+    #[Assert\NotBlank(message: "L'email est obligatoire")]
+    #[Assert\Email(message: "L'email n'est pas valide")]
+    //#[Assert\Regex(pattern: "/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/", message: "L'email ne peut contenir que des lettres")]    
     private ?string $email = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['customers_read','invoices_read','users_read'])]
     private ?string $company = null;
 
     #[ORM\OneToMany(mappedBy: 'customer', targetEntity: Invoice::class)]
+    #[Groups(['customers_read','users_read'])]
     private Collection $invoices;
 
     #[ORM\ManyToOne(inversedBy: 'customers')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['customers_read'])]
+    #[Assert\NotBlank(message: "L'utilisateur est obligatoire")]
     private ?User $user = null;
 
     public function __construct()
     {
         $this->invoices = new ArrayCollection();
+    }
+
+    /**
+     * Permet de récupérer le total des invoices
+     *
+     * @return float
+     */
+    #[Groups(['customers_read'])]
+    public function getTotalAmount(): float
+    {
+        return round(array_reduce($this->invoices->toArray(), function($total, $invoice){
+            return $total + $invoice->getAmount();
+        },0),2);
+    }
+    /**
+     * Permet de récupérer le montant total non payé des factures
+     *
+     * @return float
+     */
+    #[Groups(['customers_read'])]
+    public function getUnpaidAmount(): float
+    {
+        return round(array_reduce($this->invoices->toArray(), function($total, $invoice){
+            return $total + ($invoice->getStatus() === "PAID" || $invoice->getStatus() === "CANCELLED" ? 0 : $invoice->getAmount());
+        },0),2);
     }
 
     public function getId(): ?int
@@ -145,4 +207,7 @@ class Customer
 
         return $this;
     }
+
+    
+
 }

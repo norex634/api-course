@@ -2,42 +2,117 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
-use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Post;
 use Doctrine\DBAL\Types\Types;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\InvoiceRepository;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Metadata\Link;
+use App\Controller\InvoiceIncrementationController;
+use Symfony\Component\Serializer\Annotation\Groups;
+
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ApiResource(
     paginationEnabled: true,
-    paginationItemsPerPage:20,
-    order: ['sentAt' => 'desc']
+    paginationItemsPerPage: 20,
+    order: ['sentAt' => 'desc'],
+    normalizationContext: [
+        'groups' => ['invoices_read']
+    ],
+    operations: [
+        new Get(),
+        new Post(),
+        new Post(
+            controller: InvoiceIncrementationController::class,
+            uriTemplate: '/invoices/{id}/increment',
+            openapiContext: [
+                'summary'=> 'Incremente une facture',
+                'description'=> "Incremente le chrono d'une facture donnée"
+            ]
+        ),
+        new GetCollection(),
+        new Put(),
+        new Delete(),
+        new Patch()
+    ],
+    denormalizationContext: [
+        'disable_type_enforcement' => true
+    ]
 )]
-#[ApiFilter(OrderFilter::class,properties:['amout', 'sentAt'])]
+#[ApiResource(
+    uriTemplate: '/customers/{id}/invoices',
+    uriVariables: [
+        'id' => new Link(fromClass: Customer::class, fromProperty: 'invoices')
+    ],
+    operations: [new GetCollection()],
+    normalizationContext: [
+        'groups' => ['invoices_subresource']
+    ]
+)]
+#[ApiFilter(OrderFilter::class, properties:['amount','sentAt'])]
 class Invoice
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['invoices_read','customers_read','invoices_subresource'])]
     private ?int $id = null;
 
     #[ORM\Column]
-    private ?float $amount = null;
+    #[Groups(['invoices_read','customers_read','invoices_subresource'])]
+    #[Assert\NotBlank(message: "Le montant de la facture est obligatoire")]
+    #[Assert\Type(type: 'numeric', message: "Le montant de la facture doit être un numérique")]
+    #[Assert\Positive(message: "Le montant de la facture doit être positif")]
+    #[Assert\NotNull(message: "Le montant de la facture est obligatoire")]
+    #[Assert\Range(min: 0, max: 1000000, notInRangeMessage: "Le montant de la facture doit être compris entre 0 et 1 000 000")]
+    private $amount = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $sentAt = null;
+    #[Groups(['invoices_read','customers_read','invoices_subresource'])]
+    #[Assert\NotBlank(message: "La date d'envoi doit être renseignée")]
+    //#[Assert\Type(type: 'datetime', message: "La date doit être au format YYYY-MM-DD")]
+    #[Assert\DateTime(message: "La date doit être au format YYYY-MM-DD")]
+    private $sentAt = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['invoices_read','customers_read','invoices_subresource'])]
+    #[Assert\NotBlank(message: "Le statut de la facture est obligatoire")]
+    #[Assert\Choice(choices: ['SENT', 'PAID', 'CANCELLED'], message: "Le statut doit être SENT, PAID ou CANCELLED")]
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'invoices')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['invoices_read'])]
+    #[Assert\NotBlank(message: "La facture doit être liée à un client")]
     private ?Customer $customer = null;
 
     #[ORM\Column]
-    private ?int $chrono = null;
+    #[Groups(['invoices_read','customers_read','invoices_subresource'])]
+    #[Assert\NotBlank(message: "Le chrono de la facture est obligatoire")]
+    #[Assert\Type(type: 'integer', message: "Le chrono doit être un numérique")]
+    #[Assert\Positive(message: "Le chrono doit être positif")]
+    #[Assert\NotNull(message: "Le chrono de la facture est obligatoire")]
+    private $chrono = null;
+
+    /**
+     * Permet de récup le user à qui appartient finalement la facture
+     *
+     * @return User
+     */
+    #[Groups(['invoices_read'])]
+    public function getUser(): User
+    {
+        return $this->customer->getUser();
+    }
 
     public function getId(): ?int
     {
@@ -49,7 +124,7 @@ class Invoice
         return $this->amount;
     }
 
-    public function setAmount(float $amount): self
+    public function setAmount($amount): self
     {
         $this->amount = $amount;
 
@@ -61,7 +136,7 @@ class Invoice
         return $this->sentAt;
     }
 
-    public function setSentAt(\DateTimeInterface $sentAt): self
+    public function setSentAt($sentAt): self
     {
         $this->sentAt = $sentAt;
 
@@ -97,7 +172,7 @@ class Invoice
         return $this->chrono;
     }
 
-    public function setChrono(int $chrono): self
+    public function setChrono($chrono): self
     {
         $this->chrono = $chrono;
 
