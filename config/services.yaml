@@ -24,5 +24,14 @@ services:
     # please note that last definitions always *replace* previous ones
     App\Controller\InvoiceIncrementationController:
         public: true
+
     App\Serializer\PatchedDateTimeNormalizer:
-        tags: [serializer.normalizer]    
+        tags: [serializer.normalizer]
+
+    App\Events\JwtCreatedSubscriber: 
+        tags:
+            - {
+                name: kernel.event_listener,
+                event: lexik_jwt_authentication.on_jwt_created,
+                method: updateJwtData
+            }

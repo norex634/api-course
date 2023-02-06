@@ -12,37 +12,36 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
-
     private $passwordHasher;
+
     public function __construct(UserPasswordHasherInterface $passwordHasher)
     {
-        $this->passwordHasher= $passwordHasher;
+        $this->passwordHasher = $passwordHasher;
     }
+
     public function load(ObjectManager $manager): void
     {
         $faker = Factory::create("fr_FR");
 
-        $adminUser= new User();
-        $adminUser->setFirstName("flo")
-                ->setLastName("Moule")
-                ->setEmail("admin@epse.be")
+        $adminUser = new User();
+        $adminUser->setFirstName("Jordan")
+                ->setLastName("Berti")
+                ->setEmail("berti@epse.be")
                 ->setPassword($this->passwordHasher->hashPassword($adminUser,'password'))
                 ->setRoles(['ROLE_ADMIN']);
         $manager->persist($adminUser);
 
-        //gestion user
+        //gestion des User
         for($u=0;$u<10;$u++)
         {
             $chrono=1;
-            $user= new User();
+            $user = new User();
             $user->setFirstName($faker->firstName())
                 ->setLastName($faker->lastName())
                 ->setEmail($faker->email())
                 ->setPassword($this->passwordHasher->hashPassword($user,'password'));
             $manager->persist($user);
-
-            //gestion des clients
-
+            // gestion des clients 
             for($c=0;$c<rand(5,20);$c++)
             {
                 $customer = new Customer();
@@ -52,23 +51,21 @@ class AppFixtures extends Fixture
                         ->setEmail($faker->email())
                         ->setUser($user);
                 $manager->persist($customer);
-
-                //gestion des factures
+                // gestion des factures
                 for($i=0;$i<rand(3,10);$i++)
                 {
                     $invoice = new Invoice();
                     $invoice->setAmount($faker->randomFloat(2,250,5000))
-                            ->setSentAt($faker->dateTimeBetween('-6 months'))
-                            ->setStatus($faker->randomElement(['SENT','PAID','CANCELED']))
-                            ->setCustomer($customer)
-                            ->setChrono($chrono);
+                        ->setSentAt($faker->dateTimeBetween('-6 months'))
+                        ->setStatus($faker->randomElement(['SENT','PAID','CANCELLED']))
+                        ->setCustomer($customer)
+                        ->setChrono($chrono);
                     $chrono++;
                     $manager->persist($invoice);
-
-
                 }
             }
         }
+
         // $product = new Product();
         // $manager->persist($product);
 

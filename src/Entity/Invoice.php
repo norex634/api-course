@@ -20,9 +20,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
+
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ApiResource(
-    paginationEnabled: true,
+    paginationEnabled: false,
     paginationItemsPerPage: 20,
     order: ['sentAt' => 'desc'],
     normalizationContext: [
@@ -34,9 +35,9 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Post(
             controller: InvoiceIncrementationController::class,
             uriTemplate: '/invoices/{id}/increment',
-            openapiContext: [
-                'summary'=> 'Incremente une facture',
-                'description'=> "Incremente le chrono d'une facture donnée"
+            openapiContext:[
+                'summary' => 'Incrémente une facture',
+                'description' => "Incrémente le chrono d'une facture donnée"
             ]
         ),
         new GetCollection(),
@@ -44,8 +45,8 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Delete(),
         new Patch()
     ],
-    denormalizationContext: [
-        'disable_type_enforcement' => true
+    denormalizationContext:[
+        "disable_type_enforcement"=>true
     ]
 )]
 #[ApiResource(
@@ -69,38 +70,32 @@ class Invoice
 
     #[ORM\Column]
     #[Groups(['invoices_read','customers_read','invoices_subresource'])]
-    #[Assert\NotBlank(message: "Le montant de la facture est obligatoire")]
-    #[Assert\Type(type: 'numeric', message: "Le montant de la facture doit être un numérique")]
-    #[Assert\Positive(message: "Le montant de la facture doit être positif")]
-    #[Assert\NotNull(message: "Le montant de la facture est obligatoire")]
-    #[Assert\Range(min: 0, max: 1000000, notInRangeMessage: "Le montant de la facture doit être compris entre 0 et 1 000 000")]
+    #[Assert\NotBlank(message: "Le montant est obligatoire")]
+    #[Assert\Type(type:"numeric", message:"Le montat de la facture doit être au format numérique")]
     private $amount = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(['invoices_read','customers_read','invoices_subresource'])]
-    #[Assert\NotBlank(message: "La date d'envoi doit être renseignée")]
-    //#[Assert\Type(type: 'datetime', message: "La date doit être au format YYYY-MM-DD")]
-    #[Assert\DateTime(message: "La date doit être au format YYYY-MM-DD")]
+    #[Assert\NotBlank(message: "La date de la facture est obligatoire")]
+    #[Assert\Type(type:"datetime", message:"La date doit être au format YYYY-MM-DD")]
     private $sentAt = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['invoices_read','customers_read','invoices_subresource'])]
     #[Assert\NotBlank(message: "Le statut de la facture est obligatoire")]
-    #[Assert\Choice(choices: ['SENT', 'PAID', 'CANCELLED'], message: "Le statut doit être SENT, PAID ou CANCELLED")]
+    #[Assert\Choice(choices:["SENT","PAID","CANCELLED"], message: "Le statut doit être soit SENT, soit PAID ou soit CANCELLED")]
     private ?string $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'invoices')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['invoices_read'])]
-    #[Assert\NotBlank(message: "La facture doit être liée à un client")]
+    #[Assert\NotBlank(message: "Le client de la facture est obligatoire")]
     private ?Customer $customer = null;
 
     #[ORM\Column]
     #[Groups(['invoices_read','customers_read','invoices_subresource'])]
     #[Assert\NotBlank(message: "Le chrono de la facture est obligatoire")]
-    #[Assert\Type(type: 'integer', message: "Le chrono doit être un numérique")]
-    #[Assert\Positive(message: "Le chrono doit être positif")]
-    #[Assert\NotNull(message: "Le chrono de la facture est obligatoire")]
+    #[Assert\Type(type:"integer",message:"Le chrono de la facture doit être au format numérique")]
     private $chrono = null;
 
     /**

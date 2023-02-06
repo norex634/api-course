@@ -11,17 +11,19 @@ class InvoiceIncrementationController
 
     public function __construct(EntityManagerInterface $manager)
     {
-        $this->manager =$manager;
+        $this->manager = $manager;
     }
 
+    // public function __construct(
+    //     private EntityManagerInterface $manager
+    // ){}
+   
     public function __invoke(Invoice $data)
     {
-        $data->setChrono($data->getChrono() + 1 );
+        $data->setChrono($data->getChrono() + 1);
         $this->manager->persist($data);
         $this->manager->flush();
         return $data;
     }
-    
-    
-}
 
+}

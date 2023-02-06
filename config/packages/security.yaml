@@ -17,17 +17,17 @@ security:
             pattern: ^/api/users
             stateless: true
             methods: [POST]
-        login:    
+        login:
             pattern: ^/api/login
             stateless: true
             json_login:
-                check_path: /api/login_check
+                check_path: /api/login_check # or api_login_check as defined in config/routes.yaml
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
-        api:   
+        api:
             pattern: ^/api
             stateless: true
-            jwt: ~      
+            jwt: ~
         main:
             lazy: true
             provider: app_user_provider
@@ -44,9 +44,13 @@ security:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api/customers, roles: IS_AUTHENTICATED_FULLY }
-        - { path: ^/api/invoices, roles: IS_AUTHENTICATED_FULLY }
-        - { path: ^/api/users, roles: IS_AUTHENTICATED_FULLY, methods: [GET,PUT,PATCH,DELETE] }
+        #- { path: ^/api/customers, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/customers, roles: PUBLIC_ACCESS }
+        #- { path: ^/api/invoices, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/invoices, roles: PUBLIC_ACCESS }
+        #- { path: ^/api/users, roles: IS_AUTHENTICATED_FULLY, methods: [GET,PUT,PATCH,DELETE] }
+        - { path: ^/api/users, roles: PUBLIC_ACCESS }
+
 when@test:
     security:
         password_hashers:

@@ -81,7 +81,7 @@ class PatchedDateTimeNormalizer implements NormalizerInterface, DenormalizerInte
     /**
      * @throws NotNormalizableValueException
      */
-    public function denormalize(mixed $data, string $type, string $format = null, array $context = []) 
+    public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
         $dateTimeFormat = $context[self::FORMAT_KEY] ?? null;
         $timezone = $this->getTimezone($context);
@@ -115,11 +115,10 @@ class PatchedDateTimeNormalizer implements NormalizerInterface, DenormalizerInte
         try {
             return \DateTime::class === $type ? new \DateTime($data, $timezone) : new \DateTimeImmutable($data, $timezone);
         } catch (\Exception $e) {
-
-            if($context['disable_type_enforcement'] ?? false)
-            {
+            if($context['disable_type_enforcement'] ?? false){
                 return $data;
             }
+
             throw NotNormalizableValueException::createForUnexpectedDataType($e->getMessage(), $data, [Type::BUILTIN_TYPE_STRING], $context['deserialization_path'] ?? null, false, $e->getCode(), $e);
         }
     }
